@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import PixelBlast from "@/components/PixelBlast";
-
 interface HeroSectionProps {
   registerSection?: (id: string, element: HTMLElement | null) => void;
   isDesktop?: boolean;

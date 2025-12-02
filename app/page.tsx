@@ -1,5 +1,5 @@
 import { PortfolioLayout } from "@/components/layout";
-import { HeroSection, AboutSection, ProjectsSection, ContactSection } from "@/components/sections";
+import { HeroSection, AboutSection, ProjectsSection, ContactSection } from "@/components/modules/home";
 import { StaggeredMenuItem, StaggeredMenuSocialItem } from "@/components/StaggeredMenu";
 
 // Navigation menu items
