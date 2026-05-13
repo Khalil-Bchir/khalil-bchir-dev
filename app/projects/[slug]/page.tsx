@@ -106,16 +106,13 @@ export default async function ProjectPage({ params }: Props) {
         {project.video && (
           <figure className="mt-8 overflow-hidden rounded-xl border border-border bg-black shadow-sm sm:mt-10">
             <div className="relative aspect-video w-full max-h-[70vh] min-h-[12rem]">
-              <video
-                className="h-full w-full object-contain"
-                controls
-                playsInline
-                preload="metadata"
-                poster={project.image}
-              >
-                <source src={project.video} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+              <iframe
+                className="h-full w-full"
+                src={`https://drive.google.com/file/d/${project.video}/preview`}
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                title={`${project.title} demo video`}
+              />
             </div>
             <figcaption className="sr-only">Screen recording of {project.title}</figcaption>
           </figure>

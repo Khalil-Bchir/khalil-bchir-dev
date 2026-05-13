@@ -17,7 +17,7 @@ export interface ProjectDetail extends ProjectSummary {
   closingParagraphs?: string[];
   /** Public path under `/public`, e.g. `/images/saas-boilerplate.png` */
   image?: string;
-  /** Public path to an MP4/WebM demo, e.g. `/videos/qistaschain.mp4` */
+  /** Google Drive file ID for an embedded video demo */
   video?: string;
   liveUrl?: string;
   /** Overrides the default “Visit live site” label for the primary external link */
@@ -197,7 +197,7 @@ export const PROJECTS: ProjectDetail[] = [
       },
     ],
     image: "/images/blockbuilder.png",
-    video: "/videos/blockbuilder-demo.mp4",
+    video: "1M3qd9nR5WcdmKp0njiNiXLgr7wIjWLuf",
   },
   {
     slug: "awraaq",
@@ -330,7 +330,7 @@ export const PROJECTS: ProjectDetail[] = [
       "In short: it is a tool to make sure that when a business says they are successful and well-liked, they actually have the digital receipts to prove it.",
     ],
     image: "/images/qistas.png",
-    video: "/videos/qistaschain.mp4",
+    video: "1Y02yeAHTf2Duk3oszzzU9cjMgFDgQYM0",
     liveUrl: "https://on-chain-review-system.vercel.app/",
   },
 ];
