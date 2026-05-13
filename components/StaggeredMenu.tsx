@@ -3,7 +3,6 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import ThemeToggle from '@/components/ui/ThemeToggle';
-import { Code } from 'lucide-react';
 
 export interface StaggeredMenuItem {
   label: string;
@@ -23,6 +22,8 @@ export interface StaggeredMenuProps {
   displayItemNumbering?: boolean;
   className?: string;
   logoUrl?: string;
+  /** When set, replaces the default logo image */
+  logoContent?: React.ReactNode;
   menuButtonColor?: string;
   openMenuButtonColor?: string;
   accentColor?: string;
@@ -45,6 +46,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
   displayItemNumbering = true,
   className,
   logoUrl = '/vercel.svg',
+  logoContent,
   menuButtonColor = '#fff',
   openMenuButtonColor = '#fff',
   changeMenuColorOnOpen = true,
@@ -79,6 +81,10 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
   const colorTweenRef = useRef<gsap.core.Tween | null>(null);
 
   const toggleBtnRef = useRef<HTMLButtonElement | null>(null);
+  /** Header hosts the toggle outside the slide panel; exclude it from “click outside” so close + toggle don’t fight */
+  const headerRef = useRef<HTMLElement | null>(null);
+  /** Cleans up scrollend / timeout when closing menu after in-page navigation */
+  const scrollCloseArmCleanupRef = useRef<(() => void) | null>(null);
   const busyRef = useRef(false);
 
   const itemEntranceTweenRef = useRef<gsap.core.Tween | null>(null);
@@ -354,6 +360,11 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
     });
   }, []);
 
+  const disposeScrollCloseArm = useCallback(() => {
+    scrollCloseArmCleanupRef.current?.();
+    scrollCloseArmCleanupRef.current = null;
+  }, []);
+
   const toggleMenu = useCallback(() => {
     // In sidebar mode, don't allow closing
     if (sidebarMode && isFixed) return;
@@ -363,6 +374,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
     setOpen(target);
 
     if (target) {
+      disposeScrollCloseArm();
       onMenuOpen?.();
       playOpen();
     } else {
@@ -373,9 +385,10 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
     animateIcon(target);
     animateColor(target);
     animateText(target);
-  }, [playOpen, playClose, animateIcon, animateColor, animateText, onMenuOpen, onMenuClose, sidebarMode, isFixed]);
+  }, [playOpen, playClose, animateIcon, animateColor, animateText, onMenuOpen, onMenuClose, sidebarMode, isFixed, disposeScrollCloseArm]);
 
   const closeMenu = useCallback(() => {
+    disposeScrollCloseArm();
     if (openRef.current) {
       openRef.current = false;
       setOpen(false);
@@ -385,22 +398,57 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
       animateColor(false);
       animateText(false);
     }
-  }, [playClose, animateIcon, animateColor, animateText, onMenuClose]);
+  }, [disposeScrollCloseArm, playClose, animateIcon, animateColor, animateText, onMenuClose]);
+
+  /** Mobile flyout: close after smooth scroll to a #section lands (scrollend + fallback). */
+  const armCloseMenuAfterSectionScroll = useCallback(() => {
+    disposeScrollCloseArm();
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      disposeScrollCloseArm();
+      closeMenu();
+    };
+    const onScrollEnd = () => finish();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('scrollend', onScrollEnd, { passive: true });
+    }
+    const timer = typeof window !== 'undefined' ? window.setTimeout(finish, 1100) : null;
+    scrollCloseArmCleanupRef.current = () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('scrollend', onScrollEnd);
+        if (timer !== null) window.clearTimeout(timer);
+      }
+    };
+  }, [closeMenu, disposeScrollCloseArm]);
 
   React.useEffect(() => {
     if (!closeOnClickAway || !open) return;
 
-    const handleClickOutside = (event: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
-        closeMenu();
-      }
+    const isInsideChrome = (target: Node) => {
+      if (panelRef.current?.contains(target)) return true;
+      if (headerRef.current?.contains(target)) return true;
+      return false;
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    const handlePointerDownOutside = (event: PointerEvent) => {
+      if (isInsideChrome(event.target as Node)) return;
+      closeMenu();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDownOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('pointerdown', handlePointerDownOutside);
     };
   }, [closeOnClickAway, open, closeMenu]);
+
+  React.useEffect(() => {
+    return () => {
+      scrollCloseArmCleanupRef.current?.();
+      scrollCloseArmCleanupRef.current = null;
+    };
+  }, []);
 
   return (
     <div
@@ -441,18 +489,37 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
         </div>
 
         <header
-          className="staggered-menu-header absolute top-0 left-0 w-full flex items-center justify-between p-[2em] bg-transparent pointer-events-none z-20"
+          ref={headerRef}
+          className={`staggered-menu-header absolute top-0 left-0 z-20 flex w-full items-center justify-between pointer-events-none ${
+            sidebarMode
+              ? 'bg-transparent'
+              : 'border-b border-border/40 bg-sidebar/55 shadow-sm backdrop-blur-md dark:bg-sidebar/45 dark:shadow-[0_1px_0_rgba(255,255,255,0.06)] supports-[backdrop-filter]:bg-sidebar/40 dark:supports-[backdrop-filter]:bg-sidebar/35'
+          }`}
+          style={
+            !sidebarMode
+              ? ({ WebkitBackdropFilter: 'blur(12px)' } as React.CSSProperties)
+              : undefined
+          }
           aria-label="Main navigation header"
         >
-          <div className="sm-logo flex items-center select-none pointer-events-auto" aria-label="Logo">
-            <img
-              src={logoUrl || '/src/assets/logos/reactbits-gh-white.svg'}
-              alt="Logo"
-              className="sm-logo-img block h-8 w-auto object-contain"
-              draggable={false}
-              width={110}
-              height={24}
-            />
+          <div
+            className="sm-logo flex items-center select-none pointer-events-auto"
+            aria-label={logoContent ? undefined : 'Logo'}
+          >
+            {logoContent ? (
+              <div className="sm-logo-brand flex items-center gap-2 text-sidebar-foreground">
+                {logoContent}
+              </div>
+            ) : (
+              <img
+                src={logoUrl || '/src/assets/logos/reactbits-gh-white.svg'}
+                alt="Logo"
+                className="sm-logo-img block h-8 w-auto object-contain"
+                draggable={false}
+                width={110}
+                height={24}
+              />
+            )}
           </div>
 
           <div className="flex items-center gap-4 pointer-events-auto">
@@ -506,7 +573,9 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
         <aside
           id="staggered-menu-panel"
           ref={panelRef}
-          className="staggered-menu-panel absolute top-0 right-0 h-full bg-sidebar flex flex-col p-[6em_2em_2em_2em] overflow-y-auto z-10 backdrop-blur-[12px]"
+          className={`staggered-menu-panel absolute top-0 right-0 z-10 flex h-full flex-col overflow-y-auto bg-sidebar p-[6em_2em_2em_2em] backdrop-blur-[12px] ${
+            open ? 'pointer-events-auto' : 'pointer-events-none'
+          }`}
           style={{ WebkitBackdropFilter: 'blur(12px)' }}
           aria-hidden={!open}
         >
@@ -528,9 +597,17 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
                         aria-label={it.ariaLabel}
                         data-index={idx + 1}
                         onClick={(e) => {
-                          if (onItemClick && sidebarMode) {
+                          if (!onItemClick) return;
+                          const isInPage = it.link.startsWith('#');
+                          if (sidebarMode && isInPage) {
                             e.preventDefault();
                             onItemClick(it.link);
+                            return;
+                          }
+                          if (!sidebarMode && isInPage) {
+                            e.preventDefault();
+                            onItemClick(it.link);
+                            armCloseMenuAfterSectionScroll();
                           }
                         }}
                       >
@@ -580,7 +657,9 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
 
       <style>{`
 .sm-scope .staggered-menu-wrapper { position: relative; width: 100%; height: 100%; z-index: 40; }
-.sm-scope .staggered-menu-header { position: absolute; top: 0; left: 0; width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 2em; background: transparent; pointer-events: none; z-index: 20; }
+.sm-scope .staggered-menu-header { position: absolute; top: 0; left: 0; width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 2em; pointer-events: none; z-index: 20; }
+.sm-scope:not([data-sidebar-mode]) .staggered-menu-header { padding: max(0.65rem, env(safe-area-inset-top, 0px)) 1rem 0.65rem 1rem; }
+.sm-scope[data-sidebar-mode] .staggered-menu-header { background: transparent; }
 .sm-scope .staggered-menu-header > * { pointer-events: auto; }
 .sm-scope .sm-logo { display: flex; align-items: center; user-select: none; }
 .sm-scope .sm-logo-img { display: block; height: 32px; width: auto; object-fit: contain; }
@@ -624,8 +703,8 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
 .sm-scope[data-sidebar-mode] .staggered-menu-panel { width: 100% !important; }
 .sm-scope[data-sidebar-mode] .sm-prelayers { width: 100% !important; }
 
-@media (max-width: 1024px) { .sm-scope .staggered-menu-panel { width: 100%; left: 0; right: 0; } .sm-scope .staggered-menu-wrapper[data-open] .sm-logo-img { filter: invert(100%); } }
-@media (max-width: 640px) { .sm-scope .staggered-menu-panel { width: 100%; left: 0; right: 0; } .sm-scope .staggered-menu-wrapper[data-open] .sm-logo-img { filter: invert(100%); } }
+@media (max-width: 1024px) { .sm-scope .staggered-menu-panel { width: 100%; left: 0; right: 0; } .sm-scope .staggered-menu-wrapper[data-open] .sm-logo-img, .sm-scope .staggered-menu-wrapper[data-open] .sm-logo-brand { filter: invert(100%); } }
+@media (max-width: 640px) { .sm-scope .staggered-menu-panel { width: 100%; left: 0; right: 0; } .sm-scope .staggered-menu-wrapper[data-open] .sm-logo-img, .sm-scope .staggered-menu-wrapper[data-open] .sm-logo-brand { filter: invert(100%); } }
       `}</style>
     </div>
   );

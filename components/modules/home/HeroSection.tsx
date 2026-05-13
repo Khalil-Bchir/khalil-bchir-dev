@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { homeSectionInner, homeSectionPadding } from "@/lib/sectionLayout";
+
 interface HeroSectionProps {
   registerSection?: (id: string, element: HTMLElement | null) => void;
   isDesktop?: boolean;
 }
 
-export default function HeroSection({ registerSection, isDesktop }: HeroSectionProps) {
+export default function HeroSection({ registerSection }: HeroSectionProps) {
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -19,22 +21,21 @@ export default function HeroSection({ registerSection, isDesktop }: HeroSectionP
     <section
       ref={sectionRef}
       id="hero"
-      className={`relative flex w-full items-center justify-center overflow-hidden bg-background ${isDesktop ? "h-screen" : "min-h-screen"}`}
+      className={`relative flex w-full min-h-[100dvh] flex-col items-center justify-center bg-background ${homeSectionPadding}`}
     >
-
       {/* Hero content */}
-      <div className="relative z-10 mx-auto flex h-full w-full max-w-6xl flex-col gap-10 px-6 py-8 md:px-10 md:py-10">
-        <div className="flex flex-1 flex-col items-center justify-center text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-1 text-xs font-medium text-muted-foreground shadow-lg backdrop-blur">
-            <span className="inline-flex h-2 w-2 rounded-full bg-primary shadow-[0_0_12px_rgba(var(--primary),0.5)]" />
+      <div className={`relative z-10 flex w-full flex-col gap-6 sm:gap-8 ${homeSectionInner}`}>
+        <div className="flex flex-col items-center justify-center text-center">
+          <div className="inline-flex max-w-[min(100%,22rem)] items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1.5 text-center text-[11px] font-medium leading-snug text-muted-foreground shadow-lg backdrop-blur sm:max-w-none sm:px-4 sm:py-1 sm:text-xs">
+            <span className="inline-flex h-2 w-2 shrink-0 rounded-full bg-primary shadow-[0_0_12px_rgba(var(--primary),0.5)]" />
             <span>Full-stack developer · Web2 & Web3 · SaaS products</span>
           </div>
 
-          <div className="mt-7 space-y-5 md:mt-9">
-            <h1 className="bg-gradient-to-br from-foreground via-foreground/90 to-foreground/60 bg-clip-text text-4xl font-semibold tracking-tight text-transparent sm:text-5xl md:text-6xl">
+          <div className="mt-7 space-y-4 sm:space-y-5 md:mt-9">
+            <h1 className="bg-gradient-to-br from-foreground via-foreground/90 to-foreground/60 bg-clip-text px-1 text-2xl font-semibold leading-[1.12] tracking-tight text-transparent text-pretty min-[380px]:text-3xl sm:px-0 sm:text-4xl sm:leading-tight md:text-5xl lg:text-6xl">
               I build web products from idea to launch.
             </h1>
-            <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base md:max-w-xl">
+            <p className="mx-auto max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base md:max-w-xl">
               Full-stack developer focused on clean UX, solid architecture, and products that actually ship.
             </p>
           </div>

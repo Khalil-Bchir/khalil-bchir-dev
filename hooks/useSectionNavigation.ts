@@ -23,10 +23,10 @@ export const useSectionNavigation = (isDesktop: boolean) => {
       const sectionId = link.replace('#', '');
       
       if (!isDesktop) {
-        // On mobile, allow normal anchor navigation
         const section = document.getElementById(sectionId);
         if (section) {
           section.scrollIntoView({ behavior: "smooth", block: "start" });
+          setActiveSection(sectionId);
         }
         return;
       }
@@ -44,33 +44,6 @@ export const useSectionNavigation = (isDesktop: boolean) => {
     },
     [isDesktop]
   );
-
-  // Disable all user scrolling on desktop (only programmatic navigation allowed)
-  useEffect(() => {
-    if (!isDesktop) {
-      // Re-enable scrolling on mobile
-      document.body.style.overflow = '';
-      return;
-    }
-
-    // Disable body scrolling on desktop
-    document.body.style.overflow = 'hidden';
-
-    // Prevent all wheel and touch events (user cannot scroll)
-    const preventScroll = (e: WheelEvent | TouchEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-    };
-
-    window.addEventListener("wheel", preventScroll, { passive: false });
-    window.addEventListener("touchmove", preventScroll, { passive: false });
-
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener("wheel", preventScroll);
-      window.removeEventListener("touchmove", preventScroll);
-    };
-  }, [isDesktop]);
 
   // Track active section based on scroll position
   useEffect(() => {

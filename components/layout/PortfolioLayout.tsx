@@ -38,18 +38,26 @@ export const PortfolioLayout: React.FC<PortfolioLayoutProps> = ({
   });
 
   return (
-    <div className={`relative bg-background text-foreground ${isDesktop ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+    <div
+      className={`relative min-h-screen bg-background text-foreground ${
+        isDesktop ? "lg:h-[100dvh] lg:max-h-[100dvh] lg:overflow-hidden" : ""
+      }`}
+    >
       {/* Sidebar Navigation */}
-      <SidebarNavigation 
-        {...sidebarProps} 
+      <SidebarNavigation
+        {...sidebarProps}
         activeSectionId={activeSection}
         onItemClick={navigateToSection}
       />
 
-      {/* Main Content Area */}
-      <main 
-        className={`relative transition-all duration-300 lg:ml-[25%] lg:w-3/4 ${isDesktop ? 'h-screen overflow-y-auto' : 'min-h-screen'}`}
-        style={isDesktop ? { scrollBehavior: 'smooth' } : undefined}
+      {/* Main: scroll container on lg; document scroll on smaller viewports */}
+      <main
+        className={`relative min-h-screen w-full max-w-full transition-all duration-300 lg:ml-[25%] lg:w-3/4 ${
+          isDesktop
+            ? "lg:h-[100dvh] lg:max-h-[100dvh] lg:overflow-y-auto lg:overscroll-y-contain"
+            : "max-lg:scroll-pt-[calc(env(safe-area-inset-top,0px)+3.75rem)] max-lg:pt-[calc(env(safe-area-inset-top,0px)+3.75rem)]"
+        }`}
+        style={isDesktop ? { scrollBehavior: "smooth" } : { scrollBehavior: "smooth" }}
       >
         {childrenWithProps}
       </main>

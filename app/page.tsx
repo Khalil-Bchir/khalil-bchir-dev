@@ -29,16 +29,16 @@ const menuItems: StaggeredMenuItem[] = [
 // Social links
 const socialItems: StaggeredMenuSocialItem[] = [
   {
-    label: "GitHub",
-    link: "https://github.com/yourusername",
-  },
-  {
     label: "LinkedIn",
-    link: "https://linkedin.com/in/yourprofile",
+    link: "https://www.linkedin.com/in/mohamed-khalil-bchir/",
   },
   {
-    label: "Twitter",
-    link: "https://twitter.com/yourusername",
+    label: "GitHub",
+    link: "https://github.com/Khalil-Bchir",
+  },
+  {
+    label: "Upwork",
+    link: "https://www.upwork.com/freelancers/~0119a7bea10c4d7b73?mp_source=share",
   },
 ];
 

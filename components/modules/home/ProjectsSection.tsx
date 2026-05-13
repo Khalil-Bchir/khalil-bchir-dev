@@ -1,23 +1,31 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import { CircleArrowOutUpRight } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { CircleArrowOutUpRight, Clapperboard } from "lucide-react";
+import { AnimatePresence, motion, useMotionValue, useSpring } from "motion/react";
+import { PROJECTS, type ProjectDetail } from "@/lib/projects";
+import { homeSectionInner, homeSectionPadding, homeSectionStackGap } from "@/lib/sectionLayout";
 
-export interface Project {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  href: string;
-}
+const PREVIEW_W = 320;
+const PREVIEW_H = 200;
 
 interface ProjectsSectionProps {
   registerSection?: (id: string, element: HTMLElement | null) => void;
   isDesktop?: boolean;
 }
 
-export default function ProjectsSection({ registerSection, isDesktop }: ProjectsSectionProps) {
+export default function ProjectsSection({ registerSection }: ProjectsSectionProps) {
   const sectionRef = useRef<HTMLElement>(null);
+  const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [active, setActive] = useState<ProjectDetail | null>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 420, damping: 38 });
+  const springY = useSpring(y, { stiffness: 420, damping: 38 });
 
   useEffect(() => {
     if (registerSection && sectionRef.current) {
@@ -25,106 +33,168 @@ export default function ProjectsSection({ registerSection, isDesktop }: Projects
     }
   }, [registerSection]);
 
-  const projects: Project[] = [
-    {
-      id: "1",
-      title: "SaaS Analytics Dashboard",
-      description: "Multi-tenant analytics platform with billing, teams, and real-time product metrics.",
-      image: "/scream.jpg",
-      href: "#",
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const handler = () => setReducedMotion(mq.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current);
     },
-    {
-      id: "2",
-      title: "Web3 Platform",
-      description: "Launchpad for NFT-style drops with on-chain access control and dashboards.",
-      image: "/scream.jpg",
-      href: "#",
+    []
+  );
+
+  const setPreviewPosition = useCallback(
+    (clientX: number, clientY: number) => {
+      const pad = 12;
+      let nx = clientX + 20;
+      let ny = clientY - PREVIEW_H / 2;
+      nx = Math.min(window.innerWidth - PREVIEW_W - pad, Math.max(pad, nx));
+      ny = Math.min(window.innerHeight - PREVIEW_H - pad, Math.max(pad, ny));
+      x.set(nx);
+      y.set(ny);
     },
-    {
-      id: "3",
-      title: "DevTools Extension",
-      description: "Browser-first devtool that streamlines debugging and API exploration.",
-      image: "/scream.jpg",
-      href: "#",
+    [x, y]
+  );
+
+  useEffect(() => {
+    if (!active || reducedMotion) return;
+    const onMove = (e: MouseEvent) => setPreviewPosition(e.clientX, e.clientY);
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
+  }, [active, reducedMotion, setPreviewPosition]);
+
+  const cancelHide = useCallback(() => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
+  }, []);
+
+  const onRowEnter = useCallback(
+    (project: ProjectDetail, e: React.MouseEvent) => {
+      cancelHide();
+      setActive(project);
+      if (!reducedMotion) {
+        setPreviewPosition(e.clientX, e.clientY);
+      }
     },
-    {
-      id: "4",
-      title: "Next.js Starter Kit",
-      description: "Production-ready starter with auth, billing, and a clean design system.",
-      image: "/scream.jpg",
-      href: "#",
-    },
-  ];
+    [cancelHide, reducedMotion, setPreviewPosition]
+  );
+
+  const onRowLeave = useCallback(() => {
+    cancelHide();
+    leaveTimerRef.current = setTimeout(() => setActive(null), 140);
+  }, [cancelHide]);
+
+  const projects = PROJECTS;
 
   return (
     <section
       ref={sectionRef}
       id="projects"
-      className={`relative flex w-full items-center justify-center overflow-hidden bg-background px-6 py-20 md:px-10 ${isDesktop ? "h-screen" : "min-h-screen"}`}
+      className={`relative flex w-full items-center justify-center bg-background ${homeSectionPadding}`}
     >
-      <div className="mx-auto w-full max-w-6xl">
-        <div className="space-y-10 md:space-y-12">
+      <div className={homeSectionInner}>
+        <div className={homeSectionStackGap}>
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <h2 className="text-4xl font-bold text-foreground md:text-5xl">
+              <h2 className="text-2xl font-bold leading-tight tracking-tight text-foreground text-pretty min-[380px]:text-3xl sm:text-4xl md:text-5xl">
                 My Top Projects
               </h2>
-              <p className="mt-2 max-w-xl text-sm text-muted-foreground md:text-base">
-                A snapshot of products I&apos;ve shipped—from SaaS tools to Web3 platforms.
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground md:text-base">
+                Hover a row to preview the work—click through for the full case study.
               </p>
             </div>
           </div>
 
-          <div className="grid auto-rows-[220px] gap-4 md:auto-rows-[260px] md:grid-cols-4">
-            {/* Big left tile */}
-            <ProjectTile project={projects[0]} className="md:col-span-2 md:row-span-2" />
-            {/* Top-right tiles */}
-            <ProjectTile project={projects[1]} className="md:col-span-1" />
-            <ProjectTile project={projects[2]} className="md:col-span-1" />
-            <ProjectTile project={projects[3]} className="md:col-span-2" />
+          <div className="relative">
+            <ul className="divide-y divide-border">
+              {projects.map((project) => (
+                <li key={project.slug}>
+                  <Link
+                    href={`/projects/${project.slug}`}
+                    className="group block py-7 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:py-8"
+                    onMouseEnter={(e) => onRowEnter(project, e)}
+                    onMouseLeave={onRowLeave}
+                  >
+                    <div className="flex items-start justify-between gap-6 pr-1">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground md:text-xs">
+                          /projects/{project.slug}
+                        </p>
+                        <h3 className="text-lg font-semibold leading-snug tracking-tight text-foreground transition-colors group-hover:text-primary min-[380px]:text-xl sm:text-2xl md:text-3xl">
+                          {project.cardTitle ?? project.title}
+                        </h3>
+                        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
+                          {project.description}
+                        </p>
+                      </div>
+                      <span className="mt-1 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground">
+                        <CircleArrowOutUpRight className="h-5 w-5 md:h-6 md:w-6" aria-hidden />
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>
+
+      {/* Cursor-following preview (desktop / fine pointer) */}
+      <AnimatePresence>
+        {active && !reducedMotion && (
+          <motion.div
+            key={active.slug}
+            initial={{ opacity: 0, scale: 0.94 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="pointer-events-none fixed top-0 left-0 z-50 hidden overflow-hidden rounded-xl border border-border bg-card shadow-2xl ring-1 ring-black/5 [@media(hover:hover)_and_(pointer:fine)]:block dark:ring-white/10"
+            style={{
+              width: PREVIEW_W,
+              height: PREVIEW_H,
+              x: springX,
+              y: springY,
+            }}
+          >
+            <PreviewMedia project={active} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
 
-interface ProjectTileProps {
-  project: Project;
-  className?: string;
-}
-
-function ProjectTile({ project, className }: ProjectTileProps) {
-  return (
-    <a
-      href={project.href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`group relative overflow-hidden rounded-2xl border border-border bg-card/80 shadow-lg transition hover:border-primary/60 hover:shadow-xl ${className ?? ""}`}
-      style={{
-        backgroundImage: `url(${project.image})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/60 transition-opacity group-hover:from-black/80 group-hover:via-black/60 group-hover:to-black/80" />
-
-      <div className="relative flex h-full flex-col justify-between p-5 md:p-6">
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-white md:text-xl">
-            {project.title}
-          </h3>
-          <p className="max-w-md text-xs text-zinc-200/80 md:text-sm">
-            {project.description}
-          </p>
-        </div>
-
-        <div className="flex items-center justify-end">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/60 text-white transition group-hover:border-primary/70 group-hover:bg-primary/90 group-hover:text-primary-foreground">
-            <CircleArrowOutUpRight className="h-5 w-5" />
-          </div>
-        </div>
+function PreviewMedia({ project }: { project: ProjectDetail }) {
+  if (project.image) {
+    return (
+      <div className="relative h-full w-full bg-muted">
+        <Image
+          src={project.image}
+          alt=""
+          fill
+          className="object-cover object-top"
+          sizes={`${PREVIEW_W}px`}
+          priority={false}
+        />
       </div>
-    </a>
+    );
+  }
+
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-muted/80">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-background/90 text-muted-foreground">
+        <Clapperboard className="h-5 w-5" aria-hidden />
+      </div>
+      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        Video demo
+      </span>
+    </div>
   );
 }

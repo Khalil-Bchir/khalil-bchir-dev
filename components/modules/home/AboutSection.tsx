@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { homeSectionInner, homeSectionPadding, homeSectionStackGap } from "@/lib/sectionLayout";
 
 interface AboutSectionProps {
   registerSection?: (id: string, element: HTMLElement | null) => void;
   isDesktop?: boolean;
 }
 
-export default function AboutSection({ registerSection, isDesktop }: AboutSectionProps) {
+export default function AboutSection({ registerSection }: AboutSectionProps) {
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -20,16 +21,15 @@ export default function AboutSection({ registerSection, isDesktop }: AboutSectio
     <section
       ref={sectionRef}
       id="about"
-      className={`relative flex w-full items-center justify-center overflow-hidden bg-background px-6 py-20 md:px-10 ${isDesktop ? 'h-screen' : 'min-h-screen'}`}
+      className={`relative flex w-full items-center justify-center bg-background ${homeSectionPadding}`}
     >
-      <div className="mx-auto w-full max-w-4xl">
-        <div className="space-y-8">
-          <h2 className="text-4xl font-bold text-foreground md:text-5xl">
-             How I Build 
+      <div className={homeSectionInner}>
+        <div className={homeSectionStackGap}>
+          <h2 className="text-2xl font-bold leading-tight tracking-tight text-foreground text-pretty min-[380px]:text-3xl sm:text-4xl md:text-5xl">
+            How I Build
           </h2>
 
-
-          <div className="space-y-6 text-base leading-relaxed text-muted-foreground md:text-lg">
+          <div className="space-y-6 text-[15px] leading-relaxed text-muted-foreground sm:text-base md:text-lg">
             <p>
               I take ideas from the first sketch all the way to live, paying users. No handoffs and no gaps. I own every step until the product ships and starts growing.
             </p>
